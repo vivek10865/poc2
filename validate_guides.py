@@ -8,8 +8,12 @@ Checks:
 - All 5 event types represented
 - Each guide contains all required sections, a distances table, and a schedule table
 - Each guide mentions a date, a policy keyword, and a region-specific detail
+- Each guide contains version metadata (script version, generation seed, content hash)
+- Regenerating produces byte-identical output (reproducibility) -- checked separately,
+  see README: rerun generate_guides.py and diff the guides/ folder.
 Exit code is 1 if any check fails.
 """
+import re
 import sys
 from pathlib import Path
 from docx import Document
@@ -21,6 +25,7 @@ REQUIRED_SECTIONS = [
 ]
 EVENT_CODES = {"IRONMAN", "IRONMAN_703", "IRONMAN_5150", "IRONMAN_25150", "IRONKIDS"}
 POLICY_KEYWORDS = ["cancellation", "wetsuit", "cutoff"]
+VERSION_META_PATTERN = re.compile(r"document version[:\s]", re.IGNORECASE)
 
 
 def check_doc(path):
@@ -40,9 +45,13 @@ def check_doc(path):
         if kw not in body_text:
             problems.append(f"missing policy keyword '{kw}'")
 
-    import re
     if not re.search(r"\d{4}-\d{2}-\d{2}", body_text):
         problems.append("no ISO date found")
+
+    if not VERSION_META_PATTERN.search(body_text):
+        problems.append("missing version metadata (Document Version / Generation Seed / Content Hash)")
+    if "content hash" not in body_text or "generation seed" not in body_text:
+        problems.append("incomplete version metadata")
 
     return problems
 

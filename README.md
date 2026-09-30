@@ -23,12 +23,21 @@ combination, e.g. `IRONMAN_Frankfurt_2027-02-14.docx`.
 IRONMAN (full), IRONMAN 70.3 (half), IRONMAN 5150 (Olympic), IRONMAN 25150 (Sprint), IRONKIDS
 
 ## Each guide includes
+- Document Version / Generation Seed / Content Hash line under the title (version metadata),
+  repeated in the footer along with a unique Doc ID
 - Welcome, Event Overview, Distances & Cutoff Times (table), Race Week Schedule (table),
   Race Policies (cancellation, wetsuit, weather, cutoffs), Regional Travel & Logistics,
   Emergency Contacts
 - Regional variations: units (metric/imperial), currency, wetsuit rule by water temperature,
   local emergency number, language, travel note
 
+## Reproducibility
+Generation uses a fixed seed (`SEED = 42` in `generate_guides.py`) and no non-deterministic
+content, so rerunning `generate_guides.py` produces byte-identical DOCX text every time.
+Bump `SCRIPT_VERSION` at the top of the file whenever the template or content logic changes —
+this shows up in each guide's version metadata and content hash.
+
 ## Validation
 `validate_guides.py` checks: exactly 20 DOCX (+20 PDF if present), all 5 event types present,
-every document has all 7 required sections, at least 2 tables, policy keywords, and a valid date.
+every document has all 7 required sections, at least 2 tables, policy keywords, a valid date,
+and version metadata (Document Version, Generation Seed, Content Hash).

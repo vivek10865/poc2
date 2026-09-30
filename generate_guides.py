@@ -10,6 +10,7 @@ Usage:
     python generate_guides.py --pdf      # also converts each to PDF via LibreOffice
 """
 import argparse
+import hashlib
 import random
 import subprocess
 import shutil
@@ -23,6 +24,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 SEED = 42
 OUT_DIR = Path("guides")
 REFERENCE_DATE = date(2026, 9, 1)
+SCRIPT_VERSION = "1.0.0"  # bump this when the guide template/content logic changes
 
 # 5 IRONMAN-family event types, each with its own distances / cutoff structure
 EVENT_TYPES = [
@@ -83,6 +85,18 @@ def build_guide(event, region, city, event_date, rng):
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     sub = doc.add_paragraph(f"Official Athlete Guide  |  Race Day: {event_date.strftime('%A, %d %B %Y')}")
     sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # 0. Document metadata (version, generation seed, content hash for reproducibility)
+    doc_id = f"{event['code']}-{city}-{event_date.isoformat()}"
+    content_hash = hashlib.sha256(f"{doc_id}|seed={SEED}|v={SCRIPT_VERSION}".encode()).hexdigest()[:12]
+    meta = doc.add_paragraph()
+    meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    meta_run = meta.add_run(
+        f"Document Version: {SCRIPT_VERSION}  |  Generation Seed: {SEED}  |  "
+        f"Content Hash: {content_hash}  |  Generated: {REFERENCE_DATE.isoformat()}"
+    )
+    meta_run.italic = True
+    meta_run.font.size = Pt(9)
 
     # 1. Welcome
     doc.add_heading("1. Welcome", level=1)
@@ -173,7 +187,8 @@ def build_guide(event, region, city, event_date, rng):
     doc.add_paragraph()
     footer = doc.add_paragraph(
         f"This is a synthetic document generated for POC-002 testing purposes only. "
-        f"Generated {REFERENCE_DATE.isoformat()}."
+        f"Generated {REFERENCE_DATE.isoformat()} | Script v{SCRIPT_VERSION} | Seed {SEED} | "
+        f"Doc ID: {doc_id} | Hash: {content_hash}"
     )
     footer.runs[0].italic = True
     return doc
